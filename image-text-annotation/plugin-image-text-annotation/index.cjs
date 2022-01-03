@@ -142,6 +142,7 @@ class ImageTextAnnotationPlugin {
 
         #jspsych-annotation-display #annotated-image-container img {
           user-select: none;
+          display: block;
         }
 
         #jspsych-annotation-display #annotated-image-container .annotation-box {
@@ -481,8 +482,13 @@ class AnnotationBox {
         this.container.addEventListener("mousemove", this.moveHandler);
     }
     moveHandler(e) {
-        const x = Math.round(e.clientX - this.container.getBoundingClientRect().left);
-        const y = Math.round(e.clientY - this.container.getBoundingClientRect().top);
+        const container_box = this.container.getBoundingClientRect();
+        let x = Math.round(e.clientX - container_box.left);
+        let y = Math.round(e.clientY - container_box.top);
+        x = Math.min(x, container_box.width);
+        x = Math.max(x, 0);
+        y = Math.min(y, container_box.height);
+        y = Math.max(y, 0);
         this.setEndCoords(x, y);
     }
     stopMove() {
@@ -501,11 +507,21 @@ class AnnotationBox {
         this.container.removeEventListener("mouseup", this.stopDrag);
     }
     dragHandler(e) {
-        const x = Math.round(e.clientX - this.container.getBoundingClientRect().left);
-        const y = Math.round(e.clientY - this.container.getBoundingClientRect().top);
+        const container_box = this.container.getBoundingClientRect();
+        const x = Math.round(e.clientX - container_box.left);
+        const y = Math.round(e.clientY - container_box.top);
         const dx = x - this.drag_offset_x - this.start_x;
         const dy = y - this.drag_offset_y - this.start_y;
-        this.translate(dx, dy);
+        if ((this.start_x + dx < container_box.width) &&
+            (this.end_x + dx < container_box.width) &&
+            (this.start_x + dx > 0) &&
+            (this.end_x + dx > 0) &&
+            (this.start_y + dy < container_box.height) &&
+            (this.end_y + dy < container_box.height) &&
+            (this.start_y + dy > 0) &&
+            (this.start_y + dy > 0)) {
+            this.translate(dx, dy);
+        }
     }
     area() {
         const { width, height } = this.element.getBoundingClientRect();
