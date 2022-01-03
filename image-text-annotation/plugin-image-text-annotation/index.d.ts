@@ -10,6 +10,11 @@ declare const info: {
             readonly type: ParameterType.HTML_STRING;
             readonly default: any;
         };
+        readonly regions: {
+            readonly type: ParameterType.COMPLEX;
+            readonly default: readonly [];
+            readonly array: true;
+        };
     };
 };
 declare type Info = typeof info;
@@ -34,6 +39,11 @@ declare class ImageTextAnnotationPlugin implements JsPsychPlugin<Info> {
                 readonly type: ParameterType.HTML_STRING;
                 readonly default: any;
             };
+            readonly regions: {
+                readonly type: ParameterType.COMPLEX;
+                readonly default: readonly [];
+                readonly array: true;
+            };
         };
     };
     private img_container;
@@ -42,6 +52,7 @@ declare class ImageTextAnnotationPlugin implements JsPsychPlugin<Info> {
     private active_label;
     private boxes;
     private display_element;
+    private deselect_all_flag;
     constructor(jsPsych: JsPsych);
     trial(display_element: HTMLElement, trial: TrialType<Info>): void;
     private renderDisplay;

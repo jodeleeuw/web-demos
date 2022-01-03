@@ -55,6 +55,11 @@ const info = {
             type: jspsych.ParameterType.HTML_STRING,
             default: null,
         },
+        regions: {
+            type: jspsych.ParameterType.COMPLEX,
+            default: [],
+            array: true,
+        },
     },
 };
 /**
@@ -70,12 +75,20 @@ class ImageTextAnnotationPlugin {
         this.jsPsych = jsPsych;
         this.is_drawing = false;
         this.boxes = [];
+        this.deselect_all_flag = true;
     }
     trial(display_element, trial) {
         this.display_element = display_element;
         this.add_css();
         this.renderDisplay(trial);
         this.addEvents(trial);
+        for (const roi of trial.regions) {
+            const box = new AnnotationBox(roi.left, roi.top, this.boxes, this.img_container, this);
+            box.setEndCoords(roi.right, roi.bottom);
+            box.finishDrawing();
+            box.setLabel(roi.label ? roi.label : "?");
+            box.setModifiable(false);
+        }
     }
     renderDisplay(trial) {
         let html = `<div id="jspsych-annotation-display">`;
@@ -88,8 +101,8 @@ class ImageTextAnnotationPlugin {
           <img src="${trial.image}" draggable="false"></img>
         </div>
         <div id='annotation-options'>
-          <div><input type="radio" id="opt1" name="annotate_label" value="foo"><label for="opt1">Foo</label></div>
-          <div><input type="radio" id="opt2" name="annotate_label" value="bar"><label for="opt2">Bar</label></div>
+          <div><input type="radio" id="opt1" name="annotate_label" value="Foo"><label for="opt1">Foo</label></div>
+          <div><input type="radio" id="opt2" name="annotate_label" value="Bar"><label for="opt2">Bar</label></div>
           <div><input type="radio" id="opt3" name="annotate_label" value=""><label for="opt3"><input id="opt3_text" type="text"></label></div>
         </div>
       </div>
@@ -105,9 +118,16 @@ class ImageTextAnnotationPlugin {
             r.addEventListener("change", this.handle_radio_change);
         }
         this.img_container.addEventListener("mousemove", this.sort_boxes);
+        document.addEventListener("mousedown", () => {
+            this.deselect_all_flag = true;
+        });
         document.addEventListener("click", this.deselect_all);
-        this.display_element.querySelector('input[type="text"]').addEventListener('change', this.add_new_label);
-        this.display_element.querySelector('input[type="text"]').addEventListener('change', this.update_labels);
+        this.display_element
+            .querySelector('input[type="text"]')
+            .addEventListener("change", this.add_new_label);
+        this.display_element
+            .querySelector('input[type="text"]')
+            .addEventListener("change", this.update_labels);
     }
     add_css() {
         document.querySelector("head").insertAdjacentHTML("beforeend", `<style id="image-text-annotation-styles">
@@ -143,32 +163,18 @@ class ImageTextAnnotationPlugin {
           line-height:1em;
           background-color: rgba(255,255,255,0.5);
           border-radius: 5px;
-          border: 1px solid green;
+          border: 1px solid rgba(255,255,255,0.5);
           position:absolute;
-          top:50%;
-          left:50%;
-          transform: translate(-50%,-50%);
+          top:2px;
+          left:2px;
           padding: 0.25em;
           user-select: none;
           cursor: pointer;
         }
 
         #jspsych-annotation-display #annotated-image-container .annotation-box .annotation-box-label.selected {
-          font-size:10px;
-          font-family:monospace;
-          text-align:left;
-          line-height:1em;
-          background-color: rgba(255,255,255,0.5);
-          border-radius: 5px;
           border: 1px solid red;
           color: red;
-          position:absolute;
-          top:50%;
-          left:50%;
-          transform: translate(-50%,-50%);
-          padding: 0.25em;
-          user-select: none;
-          cursor: pointer;
         }
 
         .annotation-box-remove {
@@ -218,12 +224,12 @@ class ImageTextAnnotationPlugin {
           bottom: -4px;
         }
 
-        #jspsych-annotation-display #annotated-image-container .annotation-box:hover .annotation-box-remove {
+        #jspsych-annotation-display #annotated-image-container .annotation-box.modifiable:hover .annotation-box-remove {
           visibility: visible;
           
         }
 
-        #jspsych-annotation-display #annotated-image-container .annotation-box:hover .annotation-box-resize {
+        #jspsych-annotation-display #annotated-image-container .annotation-box.modifiable:hover .annotation-box-resize {
           visibility: visible;
         }
 
@@ -238,7 +244,6 @@ class ImageTextAnnotationPlugin {
         const y = Math.round(e.clientY - this.img_container.getBoundingClientRect().top);
         this.is_drawing = true;
         this.active_box = new AnnotationBox(x, y, this.boxes, this.img_container, this);
-        this.img_container.appendChild(this.active_box.getElement());
         this.img_container.addEventListener("mousemove", this.move_box);
         this.img_container.addEventListener("mouseup", this.stop_box);
     }
@@ -253,9 +258,11 @@ class ImageTextAnnotationPlugin {
         if (this.is_drawing) {
             this.active_box.finishDrawing();
             this.active_box.setLabel(this.active_label);
+            this.active_box.select();
             this.active_box = null;
             this.img_container.removeEventListener("mousemove", this.move_box);
             this.is_drawing = false;
+            this.deselect_all_flag = false;
         }
     }
     sort_boxes() {
@@ -289,23 +296,29 @@ class ImageTextAnnotationPlugin {
         }
     }
     deselect_all(e) {
-        if (!["RADIO", "LABEL", "INPUT"].includes(e.target.tagName)) {
+        if (this.deselect_all_flag && !["RADIO", "LABEL", "INPUT"].includes(e.target.tagName)) {
             for (const b of this.boxes) {
                 b.deselect();
             }
         }
     }
     add_new_label(e) {
-        const container = this.display_element.querySelector('#annotation-options');
+        const container = this.display_element.querySelector("#annotation-options");
         const options = container.querySelectorAll('input[type="radio"]').length;
         const html = `
       <div><input type="radio" id="opt${options + 1}" name="annotate_label" value=""><label for="${options + 1}"><input id="opt${options + 1}_text" type="text"></label></div>
     `;
-        container.insertAdjacentHTML('beforeend', html);
-        container.querySelector(`#opt${options + 1}_text`).addEventListener('change', this.add_new_label);
-        container.querySelector(`#opt${options + 1}_text`).addEventListener('change', this.update_labels);
-        e.target.removeEventListener('change', this.add_new_label);
-        container.querySelector(`#opt${options + 1}`).addEventListener("change", this.handle_radio_change);
+        container.insertAdjacentHTML("beforeend", html);
+        container
+            .querySelector(`#opt${options + 1}_text`)
+            .addEventListener("change", this.add_new_label);
+        container
+            .querySelector(`#opt${options + 1}_text`)
+            .addEventListener("change", this.update_labels);
+        e.target.removeEventListener("change", this.add_new_label);
+        container
+            .querySelector(`#opt${options + 1}`)
+            .addEventListener("change", this.handle_radio_change);
     }
     update_labels(e) {
         const text = e.target;
@@ -325,16 +338,27 @@ class AnnotationBox {
     constructor(x, y, box_list, container, plugin) {
         this.label = "?";
         this.selected = false;
+        this.modifiable = true;
         autoBind(this);
         this.container = container;
         this.box_list = box_list;
         this.plugin = plugin;
         this.setAnchorCoords(x, y);
         const el = document.createElement("div");
-        el.setAttribute("class", "annotation-box");
+        el.classList.add("annotation-box", "modifiable");
         el.style.left = `${x}px`;
         el.style.top = `${y}px`;
         this.element = el;
+        this.container.appendChild(this.element);
+    }
+    setModifiable(modifiable) {
+        this.modifiable = modifiable;
+        if (modifiable) {
+            this.element.classList.add("modifiable");
+        }
+        else {
+            this.element.classList.remove("modifiable");
+        }
     }
     setLabel(label) {
         if (label) {
@@ -355,6 +379,16 @@ class AnnotationBox {
     setEndCoords(x, y) {
         this.end_x = x;
         this.end_y = y;
+        this.updateRenderLocation();
+    }
+    translate(x, y) {
+        this.start_x += x;
+        this.start_y += y;
+        this.end_x += x;
+        this.end_y += y;
+        this.updateRenderLocation();
+    }
+    updateRenderLocation() {
         this.element.style.width = `${Math.abs(this.end_x - this.start_x)}px`;
         this.element.style.height = `${Math.abs(this.end_y - this.start_y)}px`;
         if (this.start_x <= this.end_x) {
@@ -380,6 +414,9 @@ class AnnotationBox {
       <div class="annotation-box-resize bottom right"></div>
     `;
         this.box_list.push(this);
+        this.addEvents();
+    }
+    addEvents() {
         this.element.querySelector(".annotation-box-remove").addEventListener("mousedown", (e) => {
             e.stopPropagation();
         });
@@ -429,8 +466,14 @@ class AnnotationBox {
         this.container.addEventListener("mouseup", () => {
             this.stopMove();
         });
-        this.element.querySelector(".annotation-box-label").addEventListener("click", this.select);
+        this.element.querySelector(".annotation-box-label").addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.select();
+        });
         this.element.querySelector(".annotation-box-label").addEventListener("mousedown", (e) => {
+            if (this.modifiable) {
+                this.startDrag(e);
+            }
             e.stopPropagation();
         });
     }
@@ -445,6 +488,25 @@ class AnnotationBox {
     stopMove() {
         this.container.removeEventListener("mousemove", this.moveHandler);
     }
+    startDrag(e) {
+        this.drag_offset_x =
+            Math.round(e.clientX - this.container.getBoundingClientRect().left) - this.start_x;
+        this.drag_offset_y =
+            Math.round(e.clientY - this.container.getBoundingClientRect().top) - this.start_y;
+        this.container.addEventListener("mousemove", this.dragHandler);
+        this.container.addEventListener("mouseup", this.stopDrag);
+    }
+    stopDrag() {
+        this.container.removeEventListener("mousemove", this.dragHandler);
+        this.container.removeEventListener("mouseup", this.stopDrag);
+    }
+    dragHandler(e) {
+        const x = Math.round(e.clientX - this.container.getBoundingClientRect().left);
+        const y = Math.round(e.clientY - this.container.getBoundingClientRect().top);
+        const dx = x - this.drag_offset_x - this.start_x;
+        const dy = y - this.drag_offset_y - this.start_y;
+        this.translate(dx, dy);
+    }
     area() {
         const { width, height } = this.element.getBoundingClientRect();
         return width * height;
@@ -457,8 +519,7 @@ class AnnotationBox {
         this.box_list = this.box_list.filter((x) => {
         });
     }
-    select(e) {
-        e.stopPropagation();
+    select() {
         for (const b of this.box_list) {
             b.deselect();
         }
