@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/jspsych@7.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-reconstruction"></script>
+    <link rel="stylesheet" href="https://unpkg.com/jspsych@7.1.2/css/jspsych.css">
+    <style>
+      .box-outer {
+        width: 100px;
+        height: 100px;
+        border: 8px solid;
+        border-radius: 100px;
+        margin: auto;
+      }
+      .box-inner {
+        width: 84px;
+        height: 84px;
+        border: 8px solid;
+        border-radius: 100px;
+      }
+    </style>
+  </head>
+  <body></body>
+  <script>
+    const jsPsych = initJsPsych({});
+
+    const recon_trial = {
+      type: jsPsychReconstruction,
+      stim_function: (p) => {
+        var background = `rgb(${240 + p * 15},${240 + p * 15},255)`
+        return `<div class="box-outer" style="border-color: #5F5081;">
+          <div class="box-inner" style="border-color: #EFC53E; background-color: ${background};">
+          </div>
+        </div>
+        <p>Press G and H to change the color of the innermost circle.</p>`
+      }
+    }
+
+    jsPsych.run([recon_trial])
+
+  </script>
+
+</html>
