@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/jspsych@7.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-slider-response"></script>
+    <script src="https://unpkg.com/@jspsych-contrib/plugin-rdk"></script>
+    <link rel="stylesheet" href="https://unpkg.com/jspsych@7.1.2/css/jspsych.css">
+  </head>
+  <body></body>
+  <script>
+    const jsPsych = initJsPsych();
+
+    const instructions = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `<p>You will see dots moving on the screen.</p>
+        <p>Some of the dots will be randomly, while the rest will be moving either to the left or right.</p>
+        <p>Press the left arrow key if the dots are moving to the left.<br>Press the right arrow key if the dots are moving to the right.</p>
+        <p>Press the spacebar to begin.</p>`
+    }
+
+    let staircase_value = 0.5;
+    let reversals = 0;
+    let direction = null;
+
+    const rdk_trial = {
+      type: jsPsychRdk,
+      number_of_dots: 1320,
+      choices: ['arrowleft', 'arrowright'],
+      correct_choice: ['arrowright'],
+      coherent_direction: 0,
+      trial_duration: 2000,
+      background_color: "white",
+      dot_color: "black",
+      coherence: ()=>{
+        return staircase_value;
+      },
+      aperture_type: 1,
+      aperture_width: 400,
+      data: {
+        reversals: reversals
+      },
+      on_start: (trial)=>{
+        let direction = jsPsych.randomization.sampleWithoutReplacement([0, 180], 1)[0];
+        trial.coherent_direction = direction;
+        if(direction == 0){
+          trial.correct_choice = ['arrowright']
+        }
+        if(direction == 180){
+          trial.correct_choice = ['arrowleft']
+        }
+      },
+      on_finish: (data)=>{
+        if(data.correct){
+          staircase_value = staircase_value * 0.74; // decrease by 26% after correct response.
+          if(direction == "up"){
+            reversals++;
+          }
+          direction = "down";
+        } else {
+          staircase_value = staircase_value * 2; // double the coherence after an incorrect response
+          if(direction == "down"){
+            reversals++;
+          }
+          direction = "up";
+        }
+        staircase_value = Math.max(Math.min(1, staircase_value), 0); // bound values to 0-1
+      }
+    }
+
+    const subjective_rating = {
+      type: jsPsychHtmlSliderResponse,
+      stimulus: '<p>How confident are you?</p>',
+      slider_width: 400,
+      labels: ['I randomly guessed', 'I am certain']
+    }
+
+    const staircase_loop = {
+      timeline: [rdk_trial, subjective_rating],
+      loop_function: ()=>{
+        if(reversals >= 10){
+          return false;
+        } else {
+          return true;
+        }
+      }
+    }
+
+    jsPsych.run([instructions, staircase_loop])
+  </script>
+</html>
