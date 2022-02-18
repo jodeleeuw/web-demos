@@ -22,14 +22,16 @@
     let staircase_value = 0.5;
     let reversals = 0;
     let direction = null;
+    let correct_response = null;
 
     const rdk_trial = {
       type: jsPsychRdk,
       number_of_dots: 1320,
-      choices: ['arrowleft', 'arrowright'],
-      correct_choice: ['arrowright'],
+      choices: [],
+      response_ends_trial: false,
+      correct_choice: [' '],
       coherent_direction: 0,
-      trial_duration: 2000,
+      trial_duration: 400,
       background_color: "white",
       dot_color: "black",
       coherence: ()=>{
@@ -44,13 +46,23 @@
         let direction = jsPsych.randomization.sampleWithoutReplacement([0, 180], 1)[0];
         trial.coherent_direction = direction;
         if(direction == 0){
-          trial.correct_choice = ['arrowright']
+          correct_response = 'arrowright'
         }
         if(direction == 180){
-          trial.correct_choice = ['arrowleft']
+          correct_response = 'arrowleft'
         }
+      }
+    }
+
+    const rdk_response = {
+      type: jsPsychHtmlKeyboardResponse,
+      choices: ['arrowleft', 'arrowright'],
+      stimulus: '<p>← or → ?</p>',
+      data: {
+        correct_response: ()=>{return correct_response;}
       },
       on_finish: (data)=>{
+        data.correct = data.correct_response == data.response;
         if(data.correct){
           staircase_value = staircase_value * 0.74; // decrease by 26% after correct response.
           if(direction == "up"){
@@ -76,7 +88,7 @@
     }
 
     const staircase_loop = {
-      timeline: [rdk_trial, subjective_rating],
+      timeline: [rdk_trial, rdk_response, subjective_rating],
       loop_function: ()=>{
         if(reversals >= 10){
           return false;
