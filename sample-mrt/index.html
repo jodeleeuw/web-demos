@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/jspsych"></script>
+  </head>
+  <body></body>
+  <script>
+    const jsPsych = initJsPsych();
+
+    var stimID = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19];
+    var rotation = [45, 60, 75, 90, 105, 120, 135, 150, 165, 180];
+
+    // pick 10 random stimulus IDs
+    var sampledStim = jsPsych.randomization.sampleWithoutReplacement(stimID, 10);
+
+    // pick 4 random starting points in the rotation list
+    var starting_point = jsPsych.randomization.sampleWithoutReplacement([0,1,2,3,4,5,6,7,8,9], 4);
+
+    // create an array with all features
+    var stimSet = [];
+    for(let i=0; i<sampledStim.length; i++){
+      for(let j=0; j<starting_point.length; j++){
+        stimSet.push({
+          id: sampledStim[i],
+          condition: j < 2 ? "match" : "nonmatch",
+          y: j == 0 || j == 2 ? rotation[(starting_point[j] + i) % 10] : 0,
+          x: j == 1 || j == 3 ? rotation[(starting_point[j] + i) % 10] : 0,
+        })
+      }
+    }
+
+    console.log(stimSet);
+
+    // create file name for one object
+    var stim = stimSet[0];
+    var file = `${stim.id}_${stim.condition}_${stim.x == 0 ? "y" : "x"}_${stim.x == 0 ? stim.y : stim.x}`
+
+    console.log(file);
+  </script>
+</html>
