@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/jspsych@7.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response"></script>
+    <link rel="stylesheet" href="https://unpkg.com/jspsych@7.1.2/css/jspsych.css">
+    <style>
+      canvas { background: #000;}
+    </style>
+  </head>
+  <body></body>
+  <script>
+    const jsPsych = initJsPsych();
+
+    const canvas_width = 300;
+    const canvas_height = 300;
+
+    let image_data = Array(canvas_width * canvas_height);
+
+    function white_noise(c) {
+      const ctx = c.getContext("2d", {alpha: false});
+      const idata = ctx.createImageData(c.width, c.height);
+      
+      let x = 0; // for image_data array
+      for(let i=0; i<idata.data.length; i+=4){
+        const r_int = jsPsych.randomization.randomInt(0,255);
+        image_data[x] = r_int;
+        x++;
+        idata.data[i] = r_int;
+        idata.data[i+1] = r_int;
+        idata.data[i+2] = r_int;
+        idata.data[i+3] = 255;
+      }
+      ctx.putImageData(idata,0,0);
+    }
+
+    const fixation = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: '<p style="font-size:48px;">+</p>',
+      trial_duration: 250,
+      choices: "NO_KEYS"
+    }
+
+    const white_noise_canvas = {
+      type: jsPsychCanvasKeyboardResponse,
+      canvas_size: [canvas_width, canvas_height],
+      stimulus: white_noise,
+      choices: [' '],
+      stimulus_duration: 500,
+      trial_duration: 1000,
+      on_finish: (data) => {
+        data.image = image_data
+      }
+    }
+
+    const sequence = {
+      timeline: [fixation, white_noise_canvas],
+      repetitions: 20,
+    }
+
+    jsPsych.run([sequence]);
+  </script>
+</html>
