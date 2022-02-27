@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head> 
+    <script src="https://unpkg.com/jspsych"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response"></script>
+    <script src="plugin-audio-keyboard-response.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/jspsych/css/jspsych.css">
+  </head>
+  <body></body>
+  <script>
+    const jsPsych = initJsPsych();
+
+    const preload = {
+      type: jsPsychPreload
+    }
+
+    const before_audio = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: 'Need to interact before audio can play. Press the spacebar.',
+      choices: [' ']
+    }
+
+    const audio_trial = {
+      type: jsPsychAudioKeyboardResponse,
+      stimulus: 'bistableauditorystimulus.mp3',
+      prompt: 'Press the spacebar if the audio changes.',
+      choices: [' '],
+      max_responses: Infinity,
+      trial_ends_after_audio: true
+    }
+
+    jsPsych.run([preload, before_audio, audio_trial])
+
+
+  </script>
+</html>
