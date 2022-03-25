@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/jspsych"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response"></script>
+    <link rel="stylesheet" href="https://unpkg.com/jspsych@7.1.2/css/jspsych.css">
+
+    <script src="https://unpkg.com/mathjs@10.4.0/lib/browser/math.js"></script>
+    <script src="RadialFrequency.js"></script>
+  </head>
+  <body></body>
+  <script>
+    const jsPsych = initJsPsych();
+
+    const trial = {
+      type: jsPsychCanvasKeyboardResponse,
+      canvas_size: [300, 300],
+      stimulus: (c) => {
+        const pixels = rf_picCreator(0.110);
+        const ctx = c.getContext("2d");
+
+        const imgData = ctx.getImageData(0, 0, 300, 300);
+        const imgPixels = imgData.data;
+        let imgPixelCounter = 0;
+        for(let y=0; y < pixels.length; y++){
+          for(let x=0; x < pixels[y].length; x++){
+            imgPixels[imgPixelCounter] = pixels[x][y]*255;
+            imgPixels[imgPixelCounter+1] = pixels[x][y]*255;
+            imgPixels[imgPixelCounter+2] = pixels[x][y]*255;
+            imgPixels[imgPixelCounter+3] = 255; // alpha channel
+            imgPixelCounter += 4;
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+      }
+    }
+
+    jsPsych.run([trial])
+   
+  </script>
+</html>
