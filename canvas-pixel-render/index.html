@@ -3,40 +3,137 @@
   <head>
     <script src="https://unpkg.com/jspsych"></script>
     <script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response"></script>
-    <link rel="stylesheet" href="https://unpkg.com/jspsych@7.1.2/css/jspsych.css">
-
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/jspsych@7.1.2/css/jspsych.css"
+    />
     <script src="https://unpkg.com/mathjs@10.4.0/lib/browser/math.js"></script>
     <script src="RadialFrequency.js"></script>
+    <style>
+      html,body {
+        background-color: #808080;
+        color: white;
+      }
+    </style>
   </head>
   <body></body>
   <script>
     const jsPsych = initJsPsych();
 
-    const trial = {
-      type: jsPsychCanvasKeyboardResponse,
-      canvas_size: [300, 300],
-      stimulus: (c) => {
-        const pixels = rf_picCreator(0.110);
-        const ctx = c.getContext("2d");
+    let staircase_value = 0.008;
+    let staircase_change = 0.0005;
+    let non_circle = 1; // 1 or 2
+    let consecutive_correct_responses = 0;
+    let last_change = null;
+    let reversals = 0;
 
-        const imgData = ctx.getImageData(0, 0, 300, 300);
-        const imgPixels = imgData.data;
-        let imgPixelCounter = 0;
-        for(let y=0; y < pixels.length; y++){
-          for(let x=0; x < pixels[y].length; x++){
-            imgPixels[imgPixelCounter] = pixels[x][y]*255;
-            imgPixels[imgPixelCounter+1] = pixels[x][y]*255;
-            imgPixels[imgPixelCounter+2] = pixels[x][y]*255;
-            imgPixels[imgPixelCounter+3] = 255; // alpha channel
-            imgPixelCounter += 4;
+    const test_timeline = {
+      timeline: [
+        {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: "<p style='font-size:60px;'>+</p>",
+          choices: "NO_KEYS",
+          trial_duration: 1000,
+          on_finish: () => {
+            // randomly determine whether the non circle is in the first or second trial
+            non_circle = jsPsych.randomization.randomInt(1, 2);
+            console.log(non_circle);
+            console.log(staircase_value);
+          },
+        },
+        {
+          type: jsPsychCanvasKeyboardResponse,
+          canvas_size: [300, 300],
+          stimulus: (c) => {
+            const rf_value = non_circle == 1 ? staircase_value : 0;
+            const pixels = rf_picCreator(rf_value);
+
+            const ctx = c.getContext("2d");
+
+            const imgData = ctx.getImageData(0, 0, 300, 300);
+            const imgPixels = imgData.data;
+            let imgPixelCounter = 0;
+            for (let y = 0; y < pixels.length; y++) {
+              for (let x = 0; x < pixels[y].length; x++) {
+                imgPixels[imgPixelCounter] = pixels[x][y] * 255;
+                imgPixels[imgPixelCounter + 1] = pixels[x][y] * 255;
+                imgPixels[imgPixelCounter + 2] = pixels[x][y] * 255;
+                imgPixels[imgPixelCounter + 3] = 255; // alpha channel
+                imgPixelCounter += 4;
+              }
+            }
+            ctx.putImageData(imgData, 0, 0);
+          },
+          choices: "NO_KEYS",
+          trial_duration: 500,
+        },
+        {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: "",
+          choices: "NO_KEYS",
+          trial_duration: 500
+        },
+        {
+          type: jsPsychCanvasKeyboardResponse,
+          canvas_size: [300, 300],
+          stimulus: (c) => {
+            const rf_value = non_circle == 2 ? staircase_value : 0;
+            const pixels = rf_picCreator(rf_value);
+
+            const ctx = c.getContext("2d");
+
+            const imgData = ctx.getImageData(0, 0, 300, 300);
+            const imgPixels = imgData.data;
+            let imgPixelCounter = 0;
+            for (let y = 0; y < pixels.length; y++) {
+              for (let x = 0; x < pixels[y].length; x++) {
+                imgPixels[imgPixelCounter] = pixels[x][y] * 255;
+                imgPixels[imgPixelCounter + 1] = pixels[x][y] * 255;
+                imgPixels[imgPixelCounter + 2] = pixels[x][y] * 255;
+                imgPixels[imgPixelCounter + 3] = 255; // alpha channel
+                imgPixelCounter += 4;
+              }
+            }
+            ctx.putImageData(imgData, 0, 0);
+          },
+          choices: "NO_KEYS",
+          trial_duration: 500,
+        },
+        {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: "<p>Which image was not a circle?</p><p>Press 1 for the first and 2 for the second.</p>",
+          choices: ["1","2"],
+          on_finish: (data) => {
+            data.correct = data.response == non_circle;
+            console.log(data.correct);
+
+            if(data.correct){
+              consecutive_correct_responses++;
+              if(consecutive_correct_responses == 3){
+                staircase_value -= staircase_change;
+                if(last_change == "up"){
+                  reversals++;
+                }
+                last_change = "down";
+                consecutive_correct_responses = 0;
+              }
+            } else {
+              consecutive_correct_responses = 0;
+              staircase_value += staircase_change;
+              if(last_change == "down"){
+                reversals++;
+              }
+              last_change = "up";
+            }
           }
-        }
-        ctx.putImageData(imgData, 0, 0);
-
+        },
+      ],
+      loop_function: () => {
+        return reversals < 10;
       }
-    }
+    };
 
-    jsPsych.run([trial])
-   
+    jsPsych.run([test_timeline]);
   </script>
 </html>
