@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head> 
+    <script src="https://unpkg.com/jspsych"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response"></script>
+    <script src="plugin-video-keyboard-response.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/jspsych/css/jspsych.css">
+  </head>
+  <body></body>
+  <script>
+    const jsPsych = initJsPsych();
+
+    const preload = {
+      type: jsPsychPreload
+    }
+
+    const before_video = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: 'Need to interact before video can autoplay. Press the spacebar.',
+      choices: [' ']
+    }
+
+    const video_trial = {
+      type: jsPsychVideoKeyboardResponse,
+      stimulus: ['Spinning_Dancer.webm'],
+      prompt: 'Press the spacebar if the direction of rotation changes',
+      choices: [' '],
+      max_responses: Infinity,
+      loop: true,
+      controls: false,
+      trial_duration: 10000
+    }
+
+    jsPsych.run([preload, before_video, video_trial])
+
+
+  </script>
+</html>
