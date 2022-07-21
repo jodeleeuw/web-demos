@@ -100,6 +100,11 @@ var jsPsychVideoKeyboardResponse = (function (jspsych) {
         pretty_name: "Response allowed while playing",
         default: true,
       },
+      show_counter: {
+        type: jspsych.ParameterType.BOOL,
+        pretty_name: "Show counter",
+        default: false,
+      }
     },
   };
   /**
@@ -189,6 +194,9 @@ var jsPsychVideoKeyboardResponse = (function (jspsych) {
       // add prompt if there is one
       if (trial.prompt !== null) {
         video_html += trial.prompt;
+      }
+      if (trial.show_counter){
+        video_html += '<div id="jspsych-video-keyboard-response-count">Number of responses: <span id="count">0</span></div>';
       }
       display_element.innerHTML = video_html;
       var video_element = display_element.querySelector(
@@ -289,6 +297,10 @@ var jsPsychVideoKeyboardResponse = (function (jspsych) {
           }
           response.push(info.key);
           rt.push(info.rt);
+        }
+        if(trial.show_counter){
+          const count = display_element.querySelector("#count");
+          count.innerHTML = response.length;
         }
         if (trial.response_ends_trial) {
           if (trial.max_responses == 1) {

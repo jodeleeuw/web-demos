@@ -27,7 +27,8 @@
       prompt: 'Press the spacebar if the audio changes.',
       choices: [' '],
       max_responses: Infinity,
-      trial_ends_after_audio: true
+      trial_ends_after_audio: true,
+      show_counter: true,
     }
 
     jsPsych.run([preload, before_audio, audio_trial])

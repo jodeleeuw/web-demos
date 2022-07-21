@@ -51,6 +51,11 @@ var jsPsychAudioKeyboardResponse = (function (jspsych) {
         pretty_name: "Response allowed while playing",
         default: true,
       },
+      show_counter: {
+        type: jspsych.ParameterType.BOOL,
+        pretty_name: "Show counter",
+        default: false,
+      },
     },
   };
   /**
@@ -103,6 +108,12 @@ var jsPsychAudioKeyboardResponse = (function (jspsych) {
         // show prompt if there is one
         if (trial.prompt !== null) {
           display_element.innerHTML = trial.prompt;
+        }
+        if (trial.show_counter) {
+          display_element.insertAdjacentHTML(
+            "beforeend",
+            '<div id="jspsych-audio-keyboard-response-count">Number of responses: <span id="count">0</span></div>'
+          );
         }
         // start audio
         if (context !== null) {
@@ -164,6 +175,10 @@ var jsPsychAudioKeyboardResponse = (function (jspsych) {
           }
           response.push(info.key);
           rt.push(info.rt);
+        }
+        if (trial.show_counter) {
+          const count = display_element.querySelector("#count");
+          count.innerHTML = response.length;
         }
         if (trial.response_ends_trial) {
           if (trial.max_responses == 1) {
