@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/jspsych@7.3.1"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-fullscreen"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response"></script>
+    <link rel="stylesheet" href="https://unpkg.com/jspsych@7.3.1/css/jspsych.css">
+  </head>
+  <body></body>
+  <script>
+    const jsPsych = initJsPsych({
+      on_interaction_data_update: (data) => {
+        console.log(data)
+      }
+    })
+
+    const timeline = [];
+
+    timeline.push({
+      type: jsPsychFullscreen,
+      fullscreen_mode: true
+    });
+
+    timeline.push({
+      type: jsPsychHtmlButtonResponse,
+      stimulus: 'Press the button to continue.',
+      choices: ['Continue']
+    });
+
+    jsPsych.run(timeline)
+  </script>
+</html>
